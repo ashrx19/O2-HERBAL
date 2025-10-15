@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #12372A;
+  --color-secondary: #436850;
+  --color-accent: #ADBC9F;
+}
+
+body {
+  @apply bg-white text-gray-900 antialiased;
+}
+
+.heading-font {
+  font-family: 'Abril Fatface', cursive;
+}
+
+/* hide scrollbar for overflow containers */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.scroll-hidden { overflow: hidden; }
+.scroll-smooth { scroll-behavior: smooth; }
+
