@@ -2,6 +2,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 import Carousel from '../components/Carousel'
+import ProductCarousel from '../components/ProductCarousel'
 import { Link } from 'react-router-dom'
 import aboutImage from '../assets/about.svg'
 
@@ -50,20 +51,18 @@ export default function Home() {
 
         {/* Hero slideshow (images only) */}
         <section className="w-full">
-          <Carousel autoplay={3000}>
+          <Carousel>
             {[slide1, slide2, slide3].map((slide, index) => (
-              <div key={index} className="inline-block w-full align-top">
-                <Link to="/products" className="block w-full">
-                  <div className="w-full aspect-[1920/600] relative overflow-hidden">
-                    <img 
-                      src={slide} 
-                      alt={`Slide ${index + 1}`} 
-                      className="w-full h-full object-cover" 
-                      style={{backgroundColor: index === 0 ? '#d8f3dc' : index === 1 ? '#dff3e0' : '#cfeedd'}}
-                    />
-                  </div>
-                </Link>
-              </div>
+              <Link key={index} to="/products" className="block w-full">
+                <div className="w-full aspect-[1920/600] relative">
+                  <img 
+                    src={slide} 
+                    alt={`Slide ${index + 1}`} 
+                    className="w-full h-full object-cover" 
+                    style={{backgroundColor: index === 0 ? '#d8f3dc' : index === 1 ? '#dff3e0' : '#cfeedd'}}
+                  />
+                </div>
+              </Link>
             ))}
           </Carousel>
         </section>
@@ -71,7 +70,7 @@ export default function Home() {
         {/* Product row - Soaps */}
         <section className="max-w-7xl mx-auto px-4 py-6">
           <h3 className="heading-font text-2xl text-center text-[var(--color-primary)] mb-4">Soaps</h3>
-          <Carousel>
+          <ProductCarousel>
             <div className="flex gap-4 px-6">
               {products.filter(p => p.category.toLowerCase().includes('soap')).map((p) => (
                 <div key={p.name} className="inline-block min-w-[220px] align-top">
@@ -79,13 +78,13 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          </Carousel>
+          </ProductCarousel>
         </section>
 
         {/* Shampoos row */}
         <section className="max-w-7xl mx-auto px-4 py-6">
           <h3 className="heading-font text-2xl text-center text-[var(--color-primary)] mb-4">Shampoos</h3>
-          <Carousel>
+          <ProductCarousel>
             <div className="flex gap-4 px-6">
               {products.filter(p => p.category.toLowerCase().includes('shampoo')).map((p) => (
                 <div key={p.name} className="inline-block min-w-[220px] align-top">
@@ -93,22 +92,10 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          </Carousel>
+          </ProductCarousel>
         </section>
 
-        {/* About us snippet */}
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="bg-white rounded-lg shadow p-8 md:flex md:items-center md:gap-8">
-            <div className="md:w-1/2">
-              <h3 className="heading-font text-3xl text-[var(--color-primary)]">About O2 Herbal Products</h3>
-              <p className="mt-4 text-gray-700">O2 Herbal Products is a Coimbatore-based homemade herbal skincare brand offering chemical-free, natural products made from plants and essential oils. We focus on quality, eco-friendliness, and customer satisfaction.</p>
-              <Link to="/about" className="inline-block mt-4 text-sm text-[var(--color-primary)] underline">Learn more</Link>
-            </div>
-            <div className="md:w-1/2 mt-6 md:mt-0">
-              <img src={aboutImage} alt="about" className="w-full rounded" />
-            </div>
-          </div>
-        </section>
+        {/* Removed About section - moved to footer */}
       </main>
       <Footer />
     </div>

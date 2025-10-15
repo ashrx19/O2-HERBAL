@@ -1,0 +1,187 @@
+/* Custom Properties using your provided colors */
+:root {
+    --color-primary: #12372A; /* Deep Forest Green (Darkest text/logo) */
+    --color-secondary: #436850; /* Medium Sage Green (Links/secondary text) */
+    --color-accent: #ADBC9F; /* Light, Muted Green/Beige (Background color) */
+    
+    /* Other properties */
+    --font-heading: 'Georgia', serif; 
+    --font-body: 'Arial', sans-serif; 
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    background-color: #f7f3ed; /* Keeping a light color for the body background */
+}
+
+/* --- Footer Styling --- */
+.site-footer {
+    background-color: var(--color-accent); /* Light background */
+    padding: 60px 5%; 
+    color: var(--color-primary); /* Dark primary color for default text */
+    line-height: 1.6;
+}
+
+/* --- Top Section (Contact, Products, About Us) --- */
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 40px;
+    margin-bottom: 30px;
+    /* Light separator using primary color with low opacity */
+    border-bottom: 1px solid rgba(18, 55, 42, 0.2); 
+    gap: 30px;
+}
+
+.footer-column {
+    flex: 1; 
+    min-width: 180px; 
+}
+
+.column-title {
+    font-family: var(--font-heading);
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--color-primary);
+    margin-top: 0;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+}
+
+.footer-column p, .footer-column li {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    color: var(--color-secondary); /* Using the secondary color for body text */
+}
+
+.footer-column ul {
+    list-style: none;
+    padding: 0;
+}
+
+/* --- Center Section (Company Details & Social) --- */
+.footer-center {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 40px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid rgba(18, 55, 42, 0.2);
+}
+
+.company-details {
+    flex: 2; 
+}
+
+.company-name {
+    font-size: 0.95em;
+    font-weight: bold;
+    color: var(--color-primary);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.company-details p {
+    font-size: 0.9em;
+    margin: 0;
+    margin-bottom: 5px;
+    color: var(--color-secondary); /* Using secondary color for details text */
+}
+
+.social-icons {
+    flex: 1; 
+    text-align: right;
+    font-size: 1.2em;
+}
+
+.social-icons i {
+    color: var(--color-primary); /* Primary color for icons */
+    margin-left: 15px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.social-icons i:hover {
+    color: #fff; /* White hover effect */
+}
+
+/* --- Bottom Section (Logo, Copyright, Links) --- */
+.footer-bottom {
+    text-align: center;
+}
+
+.brand-logo {
+    font-family: var(--font-heading);
+    font-size: 3em;
+    font-weight: bold;
+    color: var(--color-primary); /* Primary color for the main logo */
+    margin-bottom: 10px;
+}
+
+.copyright {
+    color: var(--color-secondary);
+    font-size: 0.8em;
+    margin-bottom: 25px;
+}
+
+.legal-links a {
+    color: var(--color-secondary);
+    text-decoration: none;
+    font-size: 0.8em;
+    margin: 0 10px;
+    letter-spacing: 0.5px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+    transition: border-bottom 0.3s;
+}
+
+.legal-links a:hover {
+    border-bottom: 1px solid var(--color-primary); /* Primary color on link hover */
+    color: var(--color-primary);
+}
+
+/* --- Responsive Design for smaller screens --- */
+@media (max-width: 768px) {
+    .footer-top {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .footer-column {
+        min-width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .footer-column ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .footer-center {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .company-details {
+        margin-bottom: 20px;
+    }
+
+    .social-icons {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .social-icons i {
+        margin: 0 10px;
+    }
+
+    .legal-links {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+}
