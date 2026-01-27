@@ -6,20 +6,22 @@ export default function ProductCarousel({ children }) {
   function scrollLeft() {
     if (!ref.current) return
     const container = ref.current
-    const scrollAmount = container.clientWidth * 0.8
+    // Scroll by viewport width to show next set of products
+    const scrollAmount = container.clientWidth
     container.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
   }
 
   function scrollRight() {
     if (!ref.current) return
     const container = ref.current
-    const scrollAmount = container.clientWidth * 0.8
+    // Scroll by viewport width to show next set of products
+    const scrollAmount = container.clientWidth
     container.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
 
   return (
     <div className="relative">
-      <button 
+      <button
         onClick={scrollLeft}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg"
         aria-label="Previous items"
@@ -27,7 +29,7 @@ export default function ProductCarousel({ children }) {
         ◀
       </button>
 
-      <div 
+      <div
         ref={ref}
         className="overflow-x-auto scrollbar-hide scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -35,7 +37,7 @@ export default function ProductCarousel({ children }) {
         {children}
       </div>
 
-      <button 
+      <button
         onClick={scrollRight}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg"
         aria-label="Next items"

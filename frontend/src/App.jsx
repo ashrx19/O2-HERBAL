@@ -1,21 +1,27 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
-import About from './pages/About'
+import Products from './pages/Products'
+import ProductDetails from './pages/ProductDetails'
+import Cart from './pages/Cart'
 import Contact from './pages/Contact'
 import ChatWidget from './components/ChatWidget'
+import { CartProvider } from './context/CartContext'
 
 function App() {
   return (
-    <BrowserRouter>
-      <ChatWidget />
-      <Routes>
-        <Route path="/" element={<Home />} />
-  <Route path="/products" element={<div className="p-8">Products page (coming soon)</div>} />
-  <Route path="/about" element={<About />} />
-  <Route path="/contact" element={<Contact />} />
-        <Route path="/search" element={<div className="p-8">Search (coming soon)</div>} />
-      </Routes>
-    </BrowserRouter>
+    <CartProvider>
+      <BrowserRouter>
+        <ChatWidget />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/:productId" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/search" element={<div className="p-8">Search (coming soon)</div>} />
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   )
 }
 

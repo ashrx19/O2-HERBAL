@@ -8,6 +8,42 @@
   --color-accent: #ADBC9F;
 }
 
+/* Responsive Product Grid */
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 0 1.5rem;
+}
+
+/* Mobile: Show only 1 product */
+@media (max-width: 767px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0 1rem;
+  }
+  .product-item {
+    min-width: unset !important;
+  }
+}
+
+/* Tablet: Show 2-3 products */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, minmax(200px, 1fr));
+  }
+}
+
+/* Desktop: Show exactly 5 products */
+@media (min-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(5, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0 1.5rem;
+  }
+}
+
 body {
   @apply bg-white text-gray-900 antialiased;
 }

@@ -23,7 +23,7 @@ export default function Footer() {
         </div>
         
         {/* About Us Column */}
-        <div className="flex-1 min-w-[180px]">
+        <div id="about-us" className="flex-1 min-w-[180px]">
           <h3 className="heading-font text-xl font-bold mb-5 text-white">ABOUT US</h3>
           <p className="text-sm leading-relaxed">
             O2 Herbal Products is a Coimbatore-based homemade herbal skincare brand
