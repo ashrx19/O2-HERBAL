@@ -4,6 +4,7 @@ import Products from './pages/Products'
 import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
 import Contact from './pages/Contact'
+import AdminLogin from './pages/AdminLogin'
 import ChatWidget from './components/ChatWidget'
 import { CartProvider } from './context/CartContext'
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/products/:productId" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/search" element={<div className="p-8">Search (coming soon)</div>} />
         </Routes>
       </BrowserRouter>
