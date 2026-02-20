@@ -1,0 +1,37 @@
+import axios from 'axios'
+
+const API = axios.create({
+  baseURL: 'http://localhost:5000/api',
+})
+
+// Add token to requests
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adminToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// Auth
+export const loginAdmin = (email, password) => API.post('/users/login', { email, password })
+
+// Products
+export const getAllProducts = () => API.get('/admin/products')
+export const getProductById = (id) => API.get(`/products/${id}`)
+export const createProduct = (data) => API.post('/admin/products', data)
+export const updateProduct = (id, data) => API.put(`/admin/products/${id}`, data)
+export const deleteProduct = (id) => API.delete(`/admin/products/${id}`)
+
+// Orders
+export const getAllOrders = () => API.get('/admin/orders')
+export const getOrderById = (id) => API.get(`/orders/${id}`)
+export const updateOrderStatus = (id, data) => API.put(`/admin/orders/${id}`, data)
+
+// Stats
+export const getAdminStats = () => API.get('/admin/stats')
+
+// Reviews
+export const getProductReviews = (productId) => API.get(`/products/${productId}`)
+
+export default API

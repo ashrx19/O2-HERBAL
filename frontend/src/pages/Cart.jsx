@@ -197,7 +197,9 @@ export default function Cart() {
                   <span>₹{finalTotal.toLocaleString()}</span>
                 </div>
 
-                <button className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors">
+                <button 
+                  onClick={() => navigate('/checkout')}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors">
                   Proceed to Checkout
                 </button>
 

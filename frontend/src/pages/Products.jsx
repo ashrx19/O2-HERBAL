@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
@@ -130,6 +131,8 @@ function ReviewForm({ productId, onSubmit }) {
 }
 
 export default function Products() {
+  const [searchParams] = useSearchParams()
+  const searchQuery = searchParams.get('search') || ''
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [reviews, setReviews] = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -143,10 +146,17 @@ export default function Products() {
     setShowAddToCart(true)
   }
 
-  // Filter products based on selected category
-  const filteredProducts = selectedCategory === 'all'
+  // Filter products based on selected category and search query
+  let filteredProducts = selectedCategory === 'all'
     ? products
     : products.filter(p => p.category === selectedCategory)
+
+  if (searchQuery) {
+    filteredProducts = filteredProducts.filter(p =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }
 
   // Get reviews for a specific product
   const getProductReviews = (productId) => {
@@ -176,7 +186,9 @@ export default function Products() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto p-6">
-        <h1 className="heading-font text-3xl text-[var(--color-primary)] mb-8">Our Products</h1>
+        <h1 className="heading-font text-3xl text-[var(--color-primary)] mb-8">
+          {searchQuery ? `Search Results for "${searchQuery}"` : 'Our Products'}
+        </h1>
 
         {/* Category Filter */}
         <div className="mb-8">
@@ -199,11 +211,21 @@ export default function Products() {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {filteredProducts.map((product) => (
-            <div key={product.name}>
-              <ProductCard product={product} onBuyClick={handleBuyClick} />
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <div key={product.name}>
+                <ProductCard product={product} onBuyClick={handleBuyClick} />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">
+                {searchQuery 
+                  ? `No products found matching "${searchQuery}"` 
+                  : 'No products available'}
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </main>
 
