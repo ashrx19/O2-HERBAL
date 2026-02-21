@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { protectedFetch } from '../utils/authUtils'
 
 export default function Checkout() {
   const navigate = useNavigate()
   const { cartItems, clearCart } = useCart()
+  const { isLoggedIn, loading } = useAuth()
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -19,6 +22,14 @@ export default function Checkout() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [error, setError] = useState('')
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      navigate('/login', { replace: true })
+    }
+  }, [isLoggedIn, loading, navigate])
 
   // Calculate totals
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -37,18 +48,64 @@ export default function Checkout() {
   const handlePlaceOrder = async (e) => {
     e.preventDefault()
     setIsProcessing(true)
+    setError('')
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      // Validate form
+      if (!formData.fullName || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode) {
+        setError('Please fill in all required fields')
+        setIsProcessing(false)
+        return
+      }
 
-    setIsProcessing(false)
-    setOrderPlaced(true)
+      // Prepare order data
+      const orderItems = cartItems.map(item => ({
+        product: item._id || item.name, // Use product ID if available
+        quantity: item.quantity,
+        price: item.price
+      }))
 
-    // Redirect after 3 seconds
-    setTimeout(() => {
-      clearCart()
-      navigate('/')
-    }, 3000)
+      const orderData = {
+        orderItems,
+        totalAmount: total,
+        shippingAddress: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode
+        },
+        notes: `Payment Method: ${formData.paymentMethod}`
+      }
+
+      // Send order to backend
+      const response = await protectedFetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to place order')
+      }
+
+      const result = await response.json()
+      
+      setOrderPlaced(true)
+
+      // Clear cart and redirect after 3 seconds
+      setTimeout(() => {
+        clearCart()
+        navigate('/')
+      }, 3000)
+    } catch (err) {
+      setError(err.message || 'Failed to place order')
+      console.error('Order error:', err)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (cartItems.length === 0 && !orderPlaced) {
@@ -104,6 +161,12 @@ export default function Checkout() {
           {/* Checkout Form */}
           <div className="lg:col-span-2">
             <form onSubmit={handlePlaceOrder} className="space-y-6 bg-white p-8 rounded-lg shadow">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">
+                  {error}
+                </div>
+              )}
+
               {/* Personal Information */}
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Personal Information</h2>

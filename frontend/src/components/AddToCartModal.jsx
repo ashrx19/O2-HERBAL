@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { protectedFetch } from '../utils/authUtils'
 import products from '../data/products'
 
 export default function AddToCartModal({ product, isOpen, onClose }) {
@@ -7,6 +10,11 @@ export default function AddToCartModal({ product, isOpen, onClose }) {
   const [recommendations, setRecommendations] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([]) // Track products selected in modal
   const { addToCart } = useCart()
+  const { isLoggedIn } = useAuth()
+  const navigate = useNavigate()
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [error, setError] = useState('')
 
   // Get a new recommendation to replace one that was selected
   const getNewRecommendation = () => {
@@ -32,15 +40,58 @@ export default function AddToCartModal({ product, isOpen, onClose }) {
     }
   }, [isOpen, product])
 
-  const handleAddToCart = () => {
-    addToCart(product, quantity)
-    // Also add all selected recommended products
-    selectedProducts.forEach(item => {
-      addToCart(item.product, item.quantity)
-    })
-    setQuantity(1)
-    setSelectedProducts([])
-    onClose()
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      setShowLoginPrompt(true)
+      return
+    }
+
+    setIsAdding(true)
+    setError('')
+
+    try {
+      const API_BASE = 'http://localhost:5000/api'
+      
+      // Add main product to cart via API
+      const mainResponse = await protectedFetch(`${API_BASE}/cart/add`, {
+        method: 'POST',
+        body: JSON.stringify({
+          productId: product._id || product.name, // Use _id if available, fallback to name
+          quantity: quantity
+        })
+      })
+
+      if (!mainResponse.ok) {
+        const errorData = await mainResponse.json()
+        throw new Error(errorData.message || 'Failed to add to cart')
+      }
+
+      // Add recommended products to cart
+      for (const item of selectedProducts) {
+        await protectedFetch(`${API_BASE}/cart/add`, {
+          method: 'POST',
+          body: JSON.stringify({
+            productId: item.product._id || item.product.name,
+            quantity: item.quantity
+          })
+        })
+      }
+
+      // Also update local CartContext as fallback
+      addToCart(product, quantity)
+      selectedProducts.forEach(item => {
+        addToCart(item.product, item.quantity)
+      })
+
+      setQuantity(1)
+      setSelectedProducts([])
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to add to cart')
+      console.error('Add to cart error:', err)
+    } finally {
+      setIsAdding(false)
+    }
   }
 
   // Add recommended product to modal selection (not cart yet)
@@ -183,12 +234,46 @@ export default function AddToCartModal({ product, isOpen, onClose }) {
           </div>
 
           {/* Add to Cart Button */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm">
+              {error}
+            </div>
+          )}
           <button
             onClick={handleAddToCart}
-            className="w-full bg-[var(--color-primary)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--color-secondary)] transition-colors"
+            disabled={isAdding}
+            className="w-full bg-[var(--color-primary)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--color-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add {quantity + selectedProducts.reduce((sum, item) => sum + item.quantity, 0)} {quantity + selectedProducts.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'item' : 'items'} to Cart
+            {isAdding ? 'Adding...' : `Add ${quantity + selectedProducts.reduce((sum, item) => sum + item.quantity, 0)} ${quantity + selectedProducts.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'item' : 'items'} to Cart`}
           </button>
+
+          {/* Login Prompt Modal */}
+          {showLoginPrompt && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-xl font-bold text-[var(--color-primary)] mb-3">Login Required</h3>
+                <p className="text-gray-600 mb-6">Please log in to add items to your cart.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      navigate('/login')
+                      setShowLoginPrompt(false)
+                      onClose()
+                    }}
+                    className="flex-1 bg-[var(--color-primary)] text-white py-2 rounded-lg font-semibold hover:bg-[var(--color-secondary)] transition-colors"
+                  >
+                    Go to Login
+                  </button>
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Continue Shopping Button */}
           <button

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import AddToCartModal from '../components/AddToCartModal'
+import { useAuth } from '../context/AuthContext'
+import { protectedFetch } from '../utils/authUtils'
 import products from '../data/products'
 
 // Star Rating Component
@@ -59,33 +61,81 @@ function Review({ review, onDelete }) {
 }
 
 // Review Form Component
-function ReviewForm({ productId, onSubmit }) {
+function ReviewForm({ productId, onSubmit, isLoggedIn, onLoginRequired, productObjectId }) {
   const [rating, setRating] = useState(0)
   const [name, setName] = useState('')
   const [comment, setComment] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (rating === 0 || !name.trim() || !comment.trim()) return
+    
+    if (!isLoggedIn) {
+      onLoginRequired()
+      return
+    }
 
-    onSubmit({
-      id: Date.now(),
-      productId,
-      name: name.trim(),
-      rating,
-      comment: comment.trim(),
-      date: new Date().toISOString()
-    })
+    if (rating === 0 || !name.trim() || !comment.trim()) {
+      setError('Please fill in all fields and select a rating')
+      return
+    }
 
-    // Reset form
-    setRating(0)
-    setName('')
-    setComment('')
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      // Use productObjectId (from backend) if available, fallback to productId (name)
+      const id = productObjectId || productId
+      const response = await protectedFetch(`http://localhost:5000/api/products/${id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rating: parseInt(rating),
+          comment: comment.trim(),
+          userName: name.trim()
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to post review')
+      }
+
+      // Add to local state as well
+      onSubmit({
+        id: Date.now(),
+        productId,
+        name: name.trim(),
+        rating,
+        comment: comment.trim(),
+        date: new Date().toISOString()
+      })
+
+      // Reset form
+      setRating(0)
+      setName('')
+      setComment('')
+    } catch (err) {
+      setError(err.message || 'Failed to post review')
+      console.error('Review error:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md border">
       <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+      {!isLoggedIn && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+          Please <span className="font-semibold">log in</span> to post a review.
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">Your Rating</label>
@@ -100,6 +150,7 @@ function ReviewForm({ productId, onSubmit }) {
           onChange={(e) => setName(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-[var(--color-primary)]"
           placeholder="Enter your name"
+          disabled={!isLoggedIn || isSubmitting}
           required
         />
       </div>
@@ -112,15 +163,17 @@ function ReviewForm({ productId, onSubmit }) {
           className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-[var(--color-primary)]"
           rows="4"
           placeholder="Share your experience with this product..."
+          disabled={!isLoggedIn || isSubmitting}
           required
         />
       </div>
 
       <button
         type="submit"
-        className="bg-[var(--color-primary)] text-white px-6 py-2 rounded hover:bg-[var(--color-secondary)] transition-colors"
+        disabled={!isLoggedIn || isSubmitting}
+        className="bg-[var(--color-primary)] text-white px-6 py-2 rounded hover:bg-[var(--color-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Submit Review
+        {isSubmitting ? 'Posting...' : 'Submit Review'}
       </button>
     </form>
   )
@@ -129,9 +182,11 @@ function ReviewForm({ productId, onSubmit }) {
 export default function ProductDetails() {
   const { productId } = useParams()
   const navigate = useNavigate()
+  const { isLoggedIn } = useAuth()
   const [reviews, setReviews] = useState([])
   const [selectedImage, setSelectedImage] = useState(0)
   const [showAddToCart, setShowAddToCart] = useState(false)
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   // Find the product by name (URL parameter)
   const product = products.find(p => p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === productId)
@@ -343,8 +398,38 @@ export default function ProductDetails() {
           {/* Review Form */}
           <ReviewForm
             productId={product.name}
+            productObjectId={product._id} // Use MongoDB ID if available
             onSubmit={handleReviewSubmit}
+            isLoggedIn={isLoggedIn}
+            onLoginRequired={() => setShowLoginPrompt(true)}
           />
+
+          {/* Login Prompt Modal */}
+          {showLoginPrompt && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 className="text-xl font-bold text-[var(--color-primary)] mb-3">Login Required</h3>
+                <p className="text-gray-600 mb-6">Please log in to post a review for this product.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      navigate('/login')
+                      setShowLoginPrompt(false)
+                    }}
+                    className="flex-1 bg-[var(--color-primary)] text-white py-2 rounded-lg font-semibold hover:bg-[var(--color-secondary)] transition-colors"
+                  >
+                    Go to Login
+                  </button>
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

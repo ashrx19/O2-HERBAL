@@ -5,25 +5,30 @@ import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
 import Contact from './pages/Contact'
 import Checkout from './pages/Checkout'
+import Login from './pages/Login'
 import ChatWidget from './components/ChatWidget'
 import { CartProvider } from './context/CartContext'
+import { AuthProvider } from './context/AuthContext'
 
 function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <ChatWidget />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/products/:productId" element={<ProductDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/search" element={<div className="p-8">Search (coming soon)</div>} />
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <ChatWidget />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/:productId" element={<ProductDetails />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/search" element={<div className="p-8">Search (coming soon)</div>} />
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   )
 }
 
