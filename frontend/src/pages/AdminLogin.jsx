@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAdminAuth } from '../admin/context/AdminAuthContext'
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('')
@@ -7,6 +8,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAdminAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -14,7 +16,6 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
-      // TODO: Replace with your actual backend API endpoint
       const response = await fetch('http://localhost:5000/api/admin/login', {
         method: 'POST',
         headers: {
@@ -31,9 +32,8 @@ export default function AdminLogin() {
         return
       }
 
-      // Store token in localStorage
-      localStorage.setItem('adminToken', data.token)
-      localStorage.setItem('adminEmail', email)
+      // Store token and admin info using AdminAuthContext
+      login(email, data.token)
 
       // Redirect to admin dashboard
       navigate('/admin/dashboard')

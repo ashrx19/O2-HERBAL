@@ -14,7 +14,7 @@ API.interceptors.request.use((config) => {
 })
 
 // Auth
-export const loginAdmin = (email, password) => API.post('/users/login', { email, password })
+export const loginAdmin = (email, password) => API.post('/admin/login', { email, password })
 
 // Products
 export const getAllProducts = () => API.get('/admin/products')
@@ -22,6 +22,12 @@ export const getProductById = (id) => API.get(`/products/${id}`)
 export const createProduct = (data) => API.post('/admin/products', data)
 export const updateProduct = (id, data) => API.put(`/admin/products/${id}`, data)
 export const deleteProduct = (id) => API.delete(`/admin/products/${id}`)
+
+// Sliders
+export const getAllSliders = () => API.get('/admin/sliders')
+export const createSlider = (data) => API.post('/admin/sliders', data)
+export const updateSlider = (id, data) => API.put(`/admin/sliders/${id}`, data)
+export const deleteSlider = (id) => API.delete(`/admin/sliders/${id}`)
 
 // Orders
 export const getAllOrders = () => API.get('/admin/orders')

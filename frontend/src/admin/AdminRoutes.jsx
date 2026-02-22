@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAdminAuth } from './context/AdminAuthContext'
-import AdminLogin from './pages/AdminLogin'
+import AdminLogin from '../pages/AdminLogin'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import AddProduct from './pages/AddProduct'

@@ -1,13 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
-import { Toast, EmptyState } from '../components/Common'
+import { Toast, EmptyState, LoadingSpinner } from '../components/Common'
+import { getAllSliders, createSlider, updateSlider, deleteSlider } from '../services/adminApi'
 
-export default function Slides() {
-  const [slides, setSlides] = useState([])
+export default function Sliders() {
+  const [sliders, setSliders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({ title: '', description: '', image: '' })
   const [isEditing, setIsEditing] = useState(null)
   const { toasts, addToast, removeToast } = useToast()
+
+  // Fetch sliders on mount
+  useEffect(() => {
+    fetchSliders()
+  }, [])
+
+  const fetchSliders = async () => {
+    try {
+      setLoading(true)
+      const response = await getAllSliders()
+      if (response.data.success) {
+        setSliders(response.data.sliders)
+      }
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Failed to fetch sliders', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -25,34 +47,89 @@ export default function Slides() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!formData.title || !formData.description || !formData.image) {
       addToast('Please fill all fields', 'error')
       return
     }
 
-    if (isEditing) {
-      setSlides(slides.map((s) => (s.id === isEditing ? { ...formData, id: isEditing } : s)))
-      addToast('Slide updated successfully', 'success')
-      setIsEditing(null)
-    } else {
-      setSlides([...slides, { ...formData, id: Date.now() }])
-      addToast('Slide added successfully', 'success')
+    try {
+      setSubmitting(true)
+
+      if (isEditing) {
+        const response = await updateSlider(isEditing, {
+          title: formData.title,
+          description: formData.description,
+          image: formData.image,
+        })
+
+        if (response.data.success) {
+          setSliders(sliders.map((s) => (s._id === isEditing ? response.data.slider : s)))
+          addToast('Slider updated successfully', 'success')
+          setIsEditing(null)
+        }
+      } else {
+        const response = await createSlider({
+          title: formData.title,
+          description: formData.description,
+          image: formData.image,
+        })
+
+        if (response.data.success) {
+          setSliders([...sliders, response.data.slider])
+          addToast('Slider created successfully', 'success')
+        }
+      }
+
+      setFormData({ title: '', description: '', image: '' })
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Failed to save slider', 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleEdit = (slider) => {
+    setFormData({
+      title: slider.title,
+      description: slider.description,
+      image: slider.image,
+    })
+    setIsEditing(slider._id)
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this slider?')) {
+      return
     }
 
+    try {
+      const response = await deleteSlider(id)
+
+      if (response.data.success) {
+        setSliders(sliders.filter((s) => s._id !== id))
+        addToast('Slider deleted successfully', 'success')
+      }
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Failed to delete slider', 'error')
+    }
+  }
+
+  const handleCancel = () => {
+    setIsEditing(null)
     setFormData({ title: '', description: '', image: '' })
   }
 
-  const handleEdit = (slide) => {
-    setFormData(slide)
-    setIsEditing(slide.id)
-  }
-
-  const handleDelete = (id) => {
-    setSlides(slides.filter((s) => s.id !== id))
-    addToast('Slide deleted successfully', 'success')
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="p-8">
+          <LoadingSpinner />
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
@@ -79,6 +156,7 @@ export default function Slides() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Enter slide title"
+                  required
                 />
               </div>
 
@@ -93,6 +171,7 @@ export default function Slides() {
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Enter slide description"
+                  required
                 />
               </div>
 
@@ -118,17 +197,15 @@ export default function Slides() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
+                  disabled={submitting}
+                  className="flex-1 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-400"
                 >
-                  {isEditing ? 'Update Slide' : 'Add Slide'}
+                  {submitting ? 'Saving...' : isEditing ? 'Update Slide' : 'Add Slide'}
                 </button>
                 {isEditing && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditing(null)
-                      setFormData({ title: '', description: '', image: '' })
-                    }}
+                    onClick={handleCancel}
                     className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400"
                   >
                     Cancel
@@ -138,38 +215,35 @@ export default function Slides() {
             </form>
           </div>
 
-          {/* Slides List */}
+          {/* Sliders List */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Slides ({slides.length})</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Sliders ({sliders.length})</h2>
 
-            {slides.length === 0 ? (
-              <EmptyState message="No slides created yet" />
+            {sliders.length === 0 ? (
+              <EmptyState message="No sliders created yet" />
             ) : (
-              <div className="space-y-4">
-                {slides.map((slide) => (
-                  <div
-                    key={slide.id}
-                    className="border rounded-lg p-4 hover:shadow-md transition"
-                  >
-                    {slide.image && (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {sliders.map((slider) => (
+                  <div key={slider._id} className="border rounded-lg p-4 hover:shadow-md transition">
+                    {slider.image && (
                       <img
-                        src={slide.image}
-                        alt={slide.title}
+                        src={slider.image}
+                        alt={slider.title}
                         className="w-full h-32 object-cover rounded-lg mb-3"
                       />
                     )}
-                    <h3 className="font-bold text-gray-900">{slide.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{slide.description}</p>
+                    <h3 className="font-bold text-gray-900">{slider.title}</h3>
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{slider.description}</p>
 
                     <div className="flex gap-2 mt-3">
                       <button
-                        onClick={() => handleEdit(slide)}
+                        onClick={() => handleEdit(slider)}
                         className="flex-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(slide.id)}
+                        onClick={() => handleDelete(slider._id)}
                         className="flex-1 px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                       >
                         Delete

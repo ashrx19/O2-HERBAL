@@ -1,10 +1,54 @@
 import express from 'express';
 import Product from '../models/Product.js';
+import Slider from '../models/Slider.js';
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import { protect } from '../middleware/authMiddleware.js';
 import { admin } from '../middleware/adminMiddleware.js';
 
 const router = express.Router();
+
+// @route   POST /api/admin/login
+// @access  Public
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find admin user by email
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user || user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+    }
+
+    // Check password
+    const isPasswordMatch = await user.matchPassword(password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin login successful',
+      token,
+      admin: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // @route   POST /api/admin/products
 // @access  Private/Admin
@@ -121,6 +165,87 @@ router.get('/stats', protect, admin, async (req, res) => {
     const lowStockProducts = await Product.countDocuments({ stock: { $lt: 10 } });
 
     res.status(200).json({ success: true, stats: { totalProducts, activeProducts, lowStockProducts } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// SLIDER ROUTES
+
+// @route   POST /api/admin/sliders
+// @access  Private/Admin
+router.post('/sliders', protect, admin, async (req, res) => {
+  try {
+    const { title, description, image, order } = req.body;
+
+    if (!title || !description || !image) {
+      return res.status(400).json({ success: false, message: 'Please provide title, description, and image' });
+    }
+
+    const slider = new Slider({
+      title,
+      description,
+      image,
+      order: order || 0,
+    });
+
+    await slider.save();
+
+    res.status(201).json({ success: true, message: 'Slider created successfully', slider });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/admin/sliders
+// @access  Private/Admin
+router.get('/sliders', protect, admin, async (req, res) => {
+  try {
+    const sliders = await Slider.find().sort({ order: 1 });
+    res.status(200).json({ success: true, count: sliders.length, sliders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   PUT /api/admin/sliders/:id
+// @access  Private/Admin
+router.put('/sliders/:id', protect, admin, async (req, res) => {
+  try {
+    let slider = await Slider.findById(req.params.id);
+
+    if (!slider) {
+      return res.status(404).json({ success: false, message: 'Slider not found' });
+    }
+
+    const { title, description, image, order, isActive } = req.body;
+
+    if (title) slider.title = title;
+    if (description) slider.description = description;
+    if (image) slider.image = image;
+    if (order !== undefined) slider.order = order;
+    if (isActive !== undefined) slider.isActive = isActive;
+    slider.updatedAt = new Date();
+
+    await slider.save();
+
+    res.status(200).json({ success: true, message: 'Slider updated successfully', slider });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   DELETE /api/admin/sliders/:id
+// @access  Private/Admin
+router.delete('/sliders/:id', protect, admin, async (req, res) => {
+  try {
+    const slider = await Slider.findByIdAndDelete(req.params.id);
+
+    if (!slider) {
+      return res.status(404).json({ success: false, message: 'Slider not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Slider deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
