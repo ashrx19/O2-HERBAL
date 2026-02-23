@@ -1,31 +1,40 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getAllOrders } from '../services/adminApi'
 import { LoadingSpinner, EmptyState, Toast } from '../components/Common'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function Orders() {
+  const { admin, loading } = useAdminAuth()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
   const { toasts, addToast, removeToast } = useToast()
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchOrders()
+    }
+  }, [loading, admin, navigate])
 
   const fetchOrders = async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const response = await getAllOrders()
       setOrders(response.data.orders || [])
     } catch (error) {
       addToast('Failed to fetch orders', 'error')
       console.error(error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 

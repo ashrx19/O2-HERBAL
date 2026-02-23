@@ -8,6 +8,10 @@
   --color-accent: #ADBC9F;
 }
 
+.heading-font {
+  font-family: 'Abril Fatface', cursive;
+}
+
 /* Responsive Product Grid */
 .grid-responsive {
   display: grid;

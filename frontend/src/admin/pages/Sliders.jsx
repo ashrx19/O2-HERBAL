@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
 import { Toast, EmptyState, LoadingSpinner } from '../components/Common'
 import { getAllSliders, createSlider, updateSlider, deleteSlider } from '../services/adminApi'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function Sliders() {
+  const { admin, loading } = useAdminAuth()
+  const navigate = useNavigate()
   const [sliders, setSliders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({ title: '', description: '', image: '' })
   const [isEditing, setIsEditing] = useState(null)
@@ -14,12 +18,18 @@ export default function Sliders() {
 
   // Fetch sliders on mount
   useEffect(() => {
-    fetchSliders()
-  }, [])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchSliders()
+    }
+  }, [loading, admin, navigate])
 
   const fetchSliders = async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const response = await getAllSliders()
       if (response.data.success) {
         setSliders(response.data.sliders)
@@ -27,7 +37,7 @@ export default function Sliders() {
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to fetch sliders', 'error')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 

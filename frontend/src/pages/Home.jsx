@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
@@ -7,7 +7,7 @@ import ProductCarousel from '../components/ProductCarousel'
 import AddToCartModal from '../components/AddToCartModal'
 import { Link } from 'react-router-dom'
 import aboutImage from '../assets/about.svg'
-import products from '../data/products'
+import { getProducts } from '../services/productApi'
 
 // Slide image URLs (served from public directory)
 const slide1 = '/SLIDES/SLIDE1.png'
@@ -16,6 +16,25 @@ const slide3 = '/SLIDES/SLIDE3.png'
 export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showAddToCart, setShowAddToCart] = useState(false)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const res = await getProducts()
+        if (mounted) setProducts(res.data.products || [])
+      } catch (err) {
+        console.error('Failed to fetch products', err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    fetchProducts()
+    return () => { mounted = false }
+  }, [])
 
   const handleBuyClick = (product) => {
     setSelectedProduct(product)
@@ -55,7 +74,7 @@ export default function Home() {
           <h3 className="heading-font text-2xl text-center text-[var(--color-primary)] mb-4">Soaps</h3>
           <ProductCarousel>
             <div className="flex gap-4 px-6">
-              {products.filter(p => p.category.toLowerCase().includes('soap')).map((p) => (
+              {products.filter(p => (p.category||'').toLowerCase().includes('soap')).map((p) => (
                 <div key={p.name} className="flex-shrink-0 w-full sm:w-1/3 lg:w-1/5 min-w-[220px]">
                   <ProductCard product={p} onBuyClick={handleBuyClick} />
                 </div>
@@ -69,7 +88,7 @@ export default function Home() {
           <h3 className="heading-font text-2xl text-center text-[var(--color-primary)] mb-4">Shampoos</h3>
           <ProductCarousel>
             <div className="flex gap-4 px-6">
-              {products.filter(p => p.category.toLowerCase().includes('shampoo')).map((p) => (
+              {products.filter(p => (p.category||'').toLowerCase().includes('shampoo')).map((p) => (
                 <div key={p.name} className="flex-shrink-0 w-full sm:w-1/3 lg:w-1/5 min-w-[220px]">
                   <ProductCard product={p} onBuyClick={handleBuyClick} />
                 </div>

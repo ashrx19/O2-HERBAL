@@ -1,6 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import Slider from '../models/Slider.js';
+import Order from '../models/Order.js';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
@@ -30,7 +31,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
 
@@ -70,7 +71,7 @@ router.post(
     }
 
     try {
-      const { name, category, price, discountPrice, stock, description, ingredients, skinType, hairType, images } =
+      const { name, category, price, discountPrice, stock, description, ingredients, skinType, hairType, images, order } =
         req.body;
 
       const product = new Product({
@@ -84,6 +85,7 @@ router.post(
         skinType: skinType || [],
         hairType: hairType || [],
         images: images || [],
+        order: order || 0,
       });
 
       await product.save();
@@ -106,7 +108,7 @@ router.put('/products/:id', protect, admin, async (req, res) => {
     }
 
     // Update only provided fields
-    const { name, category, price, discountPrice, stock, description, ingredients, skinType, hairType, images, isActive } =
+    const { name, category, price, discountPrice, stock, description, ingredients, skinType, hairType, images, isActive, order } =
       req.body;
 
     if (name) product.name = name;
@@ -120,6 +122,7 @@ router.put('/products/:id', protect, admin, async (req, res) => {
     if (hairType) product.hairType = hairType;
     if (images) product.images = images;
     if (isActive !== undefined) product.isActive = isActive;
+    if (order !== undefined) product.order = order;
 
     await product.save();
 
@@ -149,7 +152,7 @@ router.delete('/products/:id', protect, admin, async (req, res) => {
 // @access  Private/Admin
 router.get('/products', protect, admin, async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find().sort({ order: 1, createdAt: -1 });
     res.status(200).json({ success: true, count: products.length, products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -250,5 +253,56 @@ router.delete('/sliders/:id', protect, admin, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// ORDERS ROUTES
+
+// @route   GET /api/admin/orders
+// @access  Private/Admin
+router.get('/orders', protect, admin, async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('user', 'name email phone')
+      .populate('orderItems.product', 'name price')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, count: orders.length, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   PUT /api/admin/orders/:id
+// @access  Private/Admin
+router.put(
+  '/orders/:id',
+  protect,
+  admin,
+  [body('orderStatus', 'Valid order status is required').isIn(['Processing', 'Shipped', 'Delivered', 'Cancelled'])],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    try {
+      const { orderStatus, paymentStatus } = req.body;
+
+      let order = await Order.findById(req.params.id);
+
+      if (!order) {
+        return res.status(404).json({ success: false, message: 'Order not found' });
+      }
+
+      if (orderStatus) order.orderStatus = orderStatus;
+      if (paymentStatus) order.paymentStatus = paymentStatus;
+
+      await order.save();
+
+      res.status(200).json({ success: true, message: 'Order updated successfully', order });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
 
 export default router;

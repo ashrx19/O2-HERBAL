@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
 
     const products = await Product.find(filter)
       .select('-reviews')
-      .sort({ createdAt: -1 });
+      .sort({ order: 1, createdAt: -1 });
 
     res.status(200).json({ success: true, count: products.length, products });
   } catch (error) {

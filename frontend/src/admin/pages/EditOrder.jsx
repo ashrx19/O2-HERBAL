@@ -4,20 +4,28 @@ import { getOrderById, updateOrderStatus } from '../services/adminApi'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
 import { Toast, LoadingSpinner } from '../components/Common'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function EditOrder() {
+  const { admin, loading } = useAdminAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [orderStatus, setOrderStatus] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('')
   const { toasts, addToast, removeToast } = useToast()
 
   useEffect(() => {
-    fetchOrder()
-  }, [id])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchOrder()
+    }
+  }, [id, loading, admin, navigate])
 
   const fetchOrder = async () => {
     try {
@@ -30,7 +38,7 @@ export default function EditOrder() {
       addToast('Failed to fetch order', 'error')
       console.error(error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 

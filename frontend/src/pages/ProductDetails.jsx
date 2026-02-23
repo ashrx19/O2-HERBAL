@@ -5,7 +5,7 @@ import Footer from '../components/Footer'
 import AddToCartModal from '../components/AddToCartModal'
 import { useAuth } from '../context/AuthContext'
 import { protectedFetch } from '../utils/authUtils'
-import products from '../data/products'
+import { getProducts } from '../services/productApi'
 
 // Star Rating Component
 function StarRating({ rating, onRatingChange, readonly = false }) {
@@ -187,17 +187,40 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [showAddToCart, setShowAddToCart] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // Find the product by name (URL parameter)
-  const product = products.find(p => p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === productId)
+  // Find the product by slug (productId) by fetching products from API
+  useEffect(() => {
+    let mounted = true
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const res = await getProducts()
+        const list = res.data.products || []
+        const slugify = (name) => name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        const found = list.find(p => slugify(p.name) === productId)
+        if (mounted) setProduct(found || null)
+      } catch (err) {
+        if (mounted) setError(err.response?.data?.message || 'Failed to load product')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    fetchProducts()
+    return () => { mounted = false }
+  }, [productId])
 
   // Get reviews for this product
   const productReviews = reviews.filter(review => review.productId === product?.name)
 
   // Calculate average rating
-  const averageRating = productReviews.length > 0
-    ? productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
-    : product?.rating || 0
+  const averageRating = product
+    ? (productReviews.length > 0
+      ? productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
+      : product.rating || 0)
+    : 0
 
   // Handle review submission
   const handleReviewSubmit = (review) => {
@@ -207,6 +230,18 @@ export default function ProductDetails() {
   // Handle review deletion
   const handleReviewDelete = (reviewId) => {
     setReviews(prev => prev.filter(review => review.id !== reviewId))
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">Loading product...</div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
+    )
   }
 
   if (!product) {
@@ -231,7 +266,7 @@ export default function ProductDetails() {
   }
 
   // Create multiple images for the product (using the same image for demo)
-  const productImages = [product.image, product.image, product.image, product.image]
+  const productImages = [product.image || (product.images && product.images[0]) || '', product.image || (product.images && product.images[0]) || '', product.image || (product.images && product.images[0]) || '', product.image || (product.images && product.images[0]) || '']
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -285,7 +320,7 @@ export default function ProductDetails() {
               <div className="flex items-center gap-4 mb-4">
                 <StarRating rating={Math.round(averageRating)} readonly />
                 <span className="text-lg font-semibold">{averageRating.toFixed(1)}</span>
-                <span className="text-gray-600">({productReviews.length + product.reviews} reviews)</span>
+                <span className="text-gray-600">({productReviews.length + (product.numReviews ?? product.reviews ?? 0)} reviews)</span>
               </div>
 
               {/* Price */}
@@ -314,7 +349,7 @@ export default function ProductDetails() {
             <div>
               <h2 className="text-xl font-semibold mb-3">Key Benefits</h2>
               <ul className="grid grid-cols-2 gap-2">
-                {product.benefits.map((benefit, index) => (
+                {(product.benefits || []).map((benefit, index) => (
                   <li key={index} className="flex items-center gap-2 text-gray-700">
                     <span className="text-green-500">✓</span>
                     {benefit}
@@ -327,7 +362,7 @@ export default function ProductDetails() {
             <div>
               <h2 className="text-xl font-semibold mb-3">Ingredients</h2>
               <div className="flex flex-wrap gap-2">
-                {product.ingredients.map((ingredient, index) => (
+                {(product.ingredients || []).map((ingredient, index) => (
                   <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
                     {ingredient}
                   </span>
@@ -338,7 +373,7 @@ export default function ProductDetails() {
             {/* How to Use */}
             <div>
               <h2 className="text-xl font-semibold mb-3">How to Use</h2>
-              <p className="text-gray-700 leading-relaxed">{product.howToUse}</p>
+              <p className="text-gray-700 leading-relaxed">{product.howToUse || ''}</p>
             </div>
           </div>
         </div>
@@ -352,16 +387,17 @@ export default function ProductDetails() {
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-[var(--color-primary)]">{averageRating.toFixed(1)}</div>
-                <StarRating rating={Math.round(averageRating)} readonly />
-                <div className="text-sm text-gray-600 mt-1">{productReviews.length + product.reviews} reviews</div>
+                  <StarRating rating={Math.round(averageRating)} readonly />
+                  <div className="text-sm text-gray-600 mt-1">{productReviews.length + (product.numReviews ?? product.reviews ?? 0)} reviews</div>
               </div>
               <div className="flex-1">
                 <div className="space-y-2">
                   {[5, 4, 3, 2, 1].map((stars) => {
-                    const count = [...productReviews, ...Array(product.reviews).fill({rating: product.rating})]
-                      .filter(r => Math.floor(r.rating) === stars).length
-                    const percentage = productReviews.length + product.reviews > 0
-                      ? (count / (productReviews.length + product.reviews)) * 100
+                    const numReviews = product.numReviews ?? product.reviews ?? 0
+                    const base = Array(numReviews).fill({ rating: product.rating || 0 })
+                    const count = [...productReviews, ...base].filter(r => Math.floor(r.rating) === stars).length
+                    const percentage = numReviews + productReviews.length > 0
+                      ? (count / (productReviews.length + numReviews)) * 100
                       : 0
                     return (
                       <div key={stars} className="flex items-center gap-3">

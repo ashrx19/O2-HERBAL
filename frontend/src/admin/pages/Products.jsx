@@ -1,32 +1,41 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getAllProducts, deleteProduct } from '../services/adminApi'
 import { LoadingSpinner, EmptyState, ConfirmDialog, Toast } from '../components/Common'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function Products() {
+  const { admin, loading } = useAdminAuth()
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const { toasts, addToast, removeToast } = useToast()
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchProducts()
+    }
+  }, [loading, admin, navigate])
 
   const fetchProducts = async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const response = await getAllProducts()
       setProducts(response.data.products || [])
     } catch (error) {
       addToast('Failed to fetch products', 'error')
       console.error(error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 

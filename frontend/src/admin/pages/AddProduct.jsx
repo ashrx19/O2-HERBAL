@@ -21,10 +21,12 @@ export default function AddProduct() {
         price: parseFloat(formData.price),
         discountPrice: parseFloat(formData.discountPrice) || 0,
         stock: parseInt(formData.stock),
+        order: parseInt(formData.order) || 0,
         description: formData.description,
         ingredients: formData.ingredients,
         skinType: formData.skinType,
         hairType: formData.hairType,
+        images: formData.images,
         isActive: formData.isActive,
       }
 

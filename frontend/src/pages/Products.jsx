@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 import AddToCartModal from '../components/AddToCartModal'
-import products from '../data/products'
+import { getProducts } from '../services/productApi'
 
 // Sample products data (same as Home.jsx)
 // products are imported from src/data/products
@@ -133,13 +133,34 @@ function ReviewForm({ productId, onSubmit }) {
 export default function Products() {
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('search') || ''
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [reviews, setReviews] = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showAddToCart, setShowAddToCart] = useState(false)
 
+  useEffect(() => {
+    let mounted = true
+    const fetch = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const res = await getProducts()
+        if (mounted) setProducts(res.data.products || [])
+      } catch (err) {
+        if (mounted) setError(err.response?.data?.message || 'Failed to load products')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    fetch()
+    return () => { mounted = false }
+  }, [])
+
   // Get unique categories
-  const categories = ['all', ...new Set(products.map(p => p.category))]
+  const categories = ['all', ...new Set(products.map(p => p.category || 'Uncategorized'))]
 
   const handleBuyClick = (product) => {
     setSelectedProduct(product)
@@ -155,6 +176,18 @@ export default function Products() {
     filteredProducts = filteredProducts.filter(p =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">Loading products...</div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
     )
   }
 

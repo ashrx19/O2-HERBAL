@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAdminStats, getAllProducts, getAllOrders } from '../services/adminApi'
 import { LoadingSpinner, EmptyState } from '../components/Common'
 import AdminLayout from '../components/AdminLayout'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function Dashboard() {
+  const { admin, loading } = useAdminAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState(null)
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchDashboardData()
+    }
+  }, [loading, admin, navigate])
 
   const fetchDashboardData = async () => {
     try {
@@ -27,7 +37,7 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 

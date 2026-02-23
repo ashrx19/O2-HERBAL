@@ -3,11 +3,12 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { protectedFetch } from '../utils/authUtils'
-import products from '../data/products'
+import { getProducts } from '../services/productApi'
 
 export default function AddToCartModal({ product, isOpen, onClose }) {
   const [quantity, setQuantity] = useState(1)
   const [recommendations, setRecommendations] = useState([])
+  const [allProducts, setAllProducts] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([]) // Track products selected in modal
   const { addToCart } = useCart()
   const { isLoggedIn } = useAuth()
@@ -19,7 +20,7 @@ export default function AddToCartModal({ product, isOpen, onClose }) {
   // Get a new recommendation to replace one that was selected
   const getNewRecommendation = () => {
     const selectedNames = selectedProducts.map(item => item.product.name)
-    const availableProducts = products.filter(p => 
+    const availableProducts = allProducts.filter(p => 
       p.category !== product.category && 
       p.name !== product.name &&
       !selectedNames.includes(p.name) &&
@@ -31,13 +32,28 @@ export default function AddToCartModal({ product, isOpen, onClose }) {
 
   // Get recommended products only when modal opens
   useEffect(() => {
-    if (isOpen) {
-      const otherProducts = products.filter(p => p.category !== product.category)
-      const randomized = otherProducts.sort(() => Math.random() - 0.5).slice(0, 3)
-      setRecommendations(randomized)
-      setQuantity(1) // Reset quantity when opening modal
-      setSelectedProducts([]) // Reset selected products
+    let mounted = true
+    const fetchProducts = async () => {
+      try {
+        const res = await getProducts()
+        if (!mounted) return
+        const list = res.data.products || []
+        setAllProducts(list)
+
+        if (isOpen) {
+          const otherProducts = list.filter(p => p.category !== product.category)
+          const randomized = otherProducts.sort(() => Math.random() - 0.5).slice(0, 3)
+          setRecommendations(randomized)
+          setQuantity(1) // Reset quantity when opening modal
+          setSelectedProducts([]) // Reset selected products
+        }
+      } catch (err) {
+        console.error('Failed to load recommendations', err)
+      }
     }
+
+    fetchProducts()
+    return () => { mounted = false }
   }, [isOpen, product])
 
   const handleAddToCart = async () => {

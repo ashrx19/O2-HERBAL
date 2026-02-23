@@ -35,8 +35,9 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Soap', 'Shampoo', 'Oil', 'Cream', 'Gel'],
     required: [true, 'Product category is required'],
+    trim: true,
+    default: 'Uncategorized',
   },
   description: {
     type: String,
@@ -80,6 +81,17 @@ const productSchema = new mongoose.Schema({
       type: String,
     },
   ],
+  // Single main image for compatibility with frontend components
+  image: {
+    type: String,
+    default: '',
+  },
+  // Backwards-compatible count field
+  countInStock: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
   reviews: [reviewSchema],
   rating: {
     type: Number,
@@ -95,6 +107,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  order: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -107,7 +123,7 @@ const productSchema = new mongoose.Schema({
 
 // Auto-calculate average rating
 productSchema.pre('save', function (next) {
-  if (this.reviews.length === 0) {
+  if (!this.reviews || this.reviews.length === 0) {
     this.rating = 0;
     this.numReviews = 0;
   } else {
@@ -119,6 +135,17 @@ productSchema.pre('save', function (next) {
   // Disable product if stock is 0
   if (this.stock === 0) {
     this.isActive = false;
+  }
+
+  // Keep `image` and `countInStock` in sync for compatibility
+  if ((!this.image || this.image === '') && Array.isArray(this.images) && this.images.length > 0) {
+    this.image = this.images[0];
+  }
+
+  if ((this.countInStock === undefined || this.countInStock === null) && this.stock !== undefined) {
+    this.countInStock = this.stock;
+  } else if (this.countInStock !== undefined) {
+    this.stock = this.countInStock;
   }
 
   next();

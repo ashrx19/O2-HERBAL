@@ -6,25 +6,31 @@ export default function ImageUploader({ onImagesChange, initialImages = [] }) {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files)
+    let loadedCount = 0
 
-    const newImages = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      isNew: true,
-    }))
-
-    const updatedImages = [...images, ...newImages]
-    setImages(updatedImages)
-    setPreviews(updatedImages.map((img) => img.preview || img))
-
-    // Call parent callback
-    onImagesChange(updatedImages)
+    files.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setImages((prev) => {
+          const updated = [...prev, event.target.result]
+          loadedCount++
+          // Only call parent callback after all files are loaded
+          if (loadedCount === files.length) {
+            onImagesChange(updated)
+          }
+          return updated
+        })
+        setPreviews((prev) => [...prev, event.target.result])
+      }
+      reader.readAsDataURL(file)
+    })
   }
 
   const removeImage = (index) => {
     const updatedImages = images.filter((_, i) => i !== index)
+    const updatedPreviews = previews.filter((_, i) => i !== index)
     setImages(updatedImages)
-    setPreviews(updatedImages.map((img) => img.preview || img))
+    setPreviews(updatedPreviews)
     onImagesChange(updatedImages)
   }
 

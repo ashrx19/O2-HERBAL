@@ -22,6 +22,7 @@ export default function Checkout() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [orderId, setOrderId] = useState(null)
   const [error, setError] = useState('')
 
   // Redirect if not authenticated
@@ -62,7 +63,8 @@ export default function Checkout() {
       const orderItems = cartItems.map(item => ({
         product: item._id || item.name, // Use product ID if available
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        totalPrice: item.price * item.quantity
       }))
 
       const orderData = {
@@ -93,13 +95,10 @@ export default function Checkout() {
 
       const result = await response.json()
       
+      // Store the order ID from backend response
+      setOrderId(result.data?.order?._id || result.orderId || 'N/A')
       setOrderPlaced(true)
-
-      // Clear cart and redirect after 3 seconds
-      setTimeout(() => {
-        clearCart()
-        navigate('/')
-      }, 3000)
+      clearCart()
     } catch (err) {
       setError(err.message || 'Failed to place order')
       console.error('Order error:', err)
@@ -132,17 +131,37 @@ export default function Checkout() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center py-12 px-4">
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center py-12 bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
             <div className="mb-6">
               <svg className="w-20 h-20 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-gray-800 mb-3">Order Placed Successfully!</h2>
-            <p className="text-gray-600 mb-2">Thank you for your purchase</p>
-            <p className="text-gray-600 mb-6">Order ID: <span className="font-semibold">#ORD{Math.floor(Math.random() * 1000000)}</span></p>
-            <p className="text-gray-500">Redirecting to home page...</p>
+            <p className="text-gray-600 mb-4">Thank you for your purchase</p>
+            <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-6">
+              <p className="text-sm text-gray-600 mb-1">Order ID:</p>
+              <p className="font-mono font-bold text-lg text-blue-600 break-all">{orderId}</p>
+            </div>
+            <p className="text-gray-600 mb-6 text-sm">Your order has been received and will be processed shortly.</p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/products')}
+                className="w-full bg-[var(--color-primary)] text-white py-3 rounded-lg font-semibold hover:bg-[var(--color-secondary)] transition-colors"
+              >
+                Continue Shopping
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Go to Home
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-4">📝 Note: Check the admin panel to see this order in the orders list</p>
           </div>
         </main>
         <Footer />

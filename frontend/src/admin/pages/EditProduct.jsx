@@ -5,18 +5,26 @@ import ProductForm from '../components/ProductForm'
 import AdminLayout from '../components/AdminLayout'
 import useToast from '../hooks/useToast'
 import { Toast, LoadingSpinner } from '../components/Common'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function EditProduct() {
+  const { admin, loading } = useAdminAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const { toasts, addToast, removeToast } = useToast()
 
   useEffect(() => {
-    fetchProduct()
-  }, [id])
+    if (!loading && !admin) {
+      navigate('/admin')
+      return
+    }
+    if (!loading && admin) {
+      fetchProduct()
+    }
+  }, [id, loading, admin, navigate])
 
   const fetchProduct = async () => {
     try {
@@ -26,7 +34,7 @@ export default function EditProduct() {
       addToast('Failed to fetch product', 'error')
       console.error(error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -39,10 +47,12 @@ export default function EditProduct() {
         price: parseFloat(formData.price),
         discountPrice: parseFloat(formData.discountPrice) || 0,
         stock: parseInt(formData.stock),
+        order: parseInt(formData.order) || 0,
         description: formData.description,
         ingredients: formData.ingredients,
         skinType: formData.skinType,
         hairType: formData.hairType,
+        images: formData.images,
         isActive: formData.isActive,
       }
 

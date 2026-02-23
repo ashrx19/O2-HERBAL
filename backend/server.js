@@ -11,10 +11,15 @@ import adminRoutes from './routes/adminRoutes.js';
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB - don't exit if connection fails
-connectDB().catch((err) => {
-  console.warn('⚠️  MongoDB connection warning:', err.message);
-});
+// Connect to MongoDB before starting the server. Exit on failure so problems are visible.
+(async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('❌ Failed to connect to MongoDB. Exiting. Error:', err.message);
+    process.exit(1);
+  }
+})();
 
 // Initialize express app
 const app = express();

@@ -36,8 +36,8 @@ export default function ProductCard({ product, onBuyClick }) {
         <div className="flex items-center justify-between mt-1">
           <p className="text-sm text-gray-500">{product.category}</p>
           <div className="flex items-center gap-1">
-            <StarRating rating={Math.round(product.rating)} />
-            <span className="text-xs text-gray-600">({product.reviews})</span>
+            <StarRating rating={Math.round(product.rating || 0)} />
+            <span className="text-xs text-gray-600">({product.numReviews || product.reviews || 0})</span>
           </div>
         </div>
 
